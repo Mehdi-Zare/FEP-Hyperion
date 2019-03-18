@@ -1,0 +1,78 @@
+#!/bin/sh
+#SBATCH --job-name=ESMS-Modif    
+#SBATCH -N 1
+#SBATCH -n 28
+#SBATCH --output job%j.out
+#SBATCH --error job%j.err
+#SBATCH -p heyden-lab
+
+
+ulimit -s unlimited
+unset OMP_PROC_BIND
+unset OMP_PLACES
+
+unset OMP_NUM_THREADS
+export PARNODES=28
+
+
+export SMSS_MODE=2
+
+
+
+idxi=001
+idxf=002
+diri=BT-$idxi
+dirf=BT-$idxf
+
+sed "s/DIRSUBS/$diri/g" < SMSS_INPUT_TEMPLATE > SMSS_INPUT
+mkdir -p DlpolyJdir/ RefimgJdir/ TurboJdir/ VaspJdir/
+mkdir -p RefimgJdir/{Ref100,Dlpoly100}
+
+cp -f /data/userdata/mzare/source/Bin-01/$diri/source/PeecmSdir/coord coord.$idxi
+cp -f /data/userdata/mzare/source/Bin-01/$dirf/source/PeecmSdir/coord coord.$idxf
+
+#cp -f /data/userdata/mzare/source/Bin-01/$diri/source/VaspSdir/POSCAR POSCAR.$idxi
+#cp -f /data/userdata/mzare/source/Bin-01/$dirf/source/VaspSdir/POSCAR POSCAR.$idxf
+cp -f /data/userdata/mzare/source/Bin-01/$diri/source/VaspSdir/* VaspJdir/
+
+cp -f /data/userdata/mzare/source/Bin-01/$diri/source/PeecmSdir/embedded embedded.$idxi
+head -n 1234    /data/userdata/mzare/source/Bin-01/$dirf/source/PeecmSdir/embedded > tmp-head
+head -n 661234  /data/userdata/mzare/source/Bin-01/$diri/source/PeecmSdir/embedded | tail -n 660000 > tmp-midl
+tail -n 135     /data/userdata/mzare/source/Bin-01/$dirf/source/PeecmSdir/embedded > tmp-tail
+cat tmp-head tmp-midl tmp-tail > embedded.$idxf
+rm -f tmp-head tmp-midl tmp-tail
+
+cp -f coord.$idxi coord
+cp -f embedded.$idxi embedded
+cp -f /data/userdata/mzare/source/Bin-01/$diri/source/PeecmSdir/{alpha,beta} .
+#cp -f /data/userdata/mzare/source/Bin-01/$diri/source/TurboSdir/{alpha,beta} TurboJdir/
+cp -f /data/userdata/mzare/source/Bin-01/$diri/source/TurboSdir/* TurboJdir/
+sed "s/DIRSUBS/$idxi/g" < smss-energy.sh_template > smss-energy.sh
+chmod +x smss-energy.sh
+ridft
+
+rm -f pccoord tmp.pcoord
+
+#clean up the node on hyperion for Turbomole jobs
+find /dev/shm -user mzare -exec rm -fr {} \;
+
+
+cp -f control.ridft control
+
+cp -f /data/userdata/mzare/source/Bin-01/$dirf/source/VaspSdir/* VaspJdir/
+
+cp -f coord.$idxf coord
+cp -f embedded.$idxf embedded
+cp -f /data/userdata/mzare/source/Bin-01/$dirf/source/PeecmSdir/{alpha,beta} .
+#cp -f /data/userdata/mzare/source/Bin-01/$dirf/source/TurboSdir/{alpha,beta} TurboJdir/
+cp -f /data/userdata/mzare/source/Bin-01/$dirf/source/TurboSdir/* TurboJdir/
+sed "s/DIRSUBS/$idxf/g" < smss-energy.sh_template > smss-energy.sh
+chmod +x smss-energy.sh
+ridft
+rm -f pccoord tmp.pcoord
+
+
+
+#clean up the node on hyperion for Turbomole jobs
+find /dev/shm -user mzare -exec rm -fr {} \; 
+
