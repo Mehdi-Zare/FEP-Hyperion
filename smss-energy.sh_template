@@ -73,7 +73,13 @@ if [ ${SMSS_MODE} -eq 1 ] ; then
 elif [ ${SMSS_MODE} -eq 2 ] ; then
   cd ${SMSS_WDIR_PEECM}
   ${SMSS_EXEC_TURBO}.save > ${SMSS_EXEC_TURBO}.out 
-  wait 
+  wait
+
+#clean up the node on hyperion for Turbomole jobs
+################################################
+find /dev/shm -user mzare -exec rm -fr {} \;
+################################################
+ 
 #  cd ${SMSS_WDIR_TURBO}
 #  ${SMSS_EXEC_TURBO}.save > ${SMSS_EXEC_TURBO}.out 
 #  wait 
