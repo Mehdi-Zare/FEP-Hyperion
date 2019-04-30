@@ -1,10 +1,12 @@
 #!/bin/sh
-#SBATCH --job-name=ESMS-Modif    
+#SBATCH --job-name=LJ
 #SBATCH -N 1
 #SBATCH -n 28
+#SBATCH --exclude=node[190-238]
 #SBATCH --output job%j.out
 #SBATCH --error job%j.err
-#SBATCH -p heyden-lab
+#SBATCH -t 05:00:00
+#SBATCH -p defq
 
 
 ulimit -s unlimited
@@ -28,25 +30,25 @@ sed "s/DIRSUBS/$diri/g" < SMSS_INPUT_TEMPLATE > SMSS_INPUT
 mkdir -p DlpolyJdir/ RefimgJdir/ TurboJdir/ VaspJdir/
 mkdir -p RefimgJdir/{Ref100,Dlpoly100}
 
-cp -f /data/userdata/mzare/source/Bin-01/$diri/source/PeecmSdir/coord coord.$idxi
-cp -f /data/userdata/mzare/source/Bin-01/$dirf/source/PeecmSdir/coord coord.$idxf
+cp -f /work/mzare/source-LJ-MF/Bin-01/$diri/source/PeecmSdir/coord coord.$idxi
+cp -f /work/mzare/source-LJ-MF/Bin-01/$dirf/source/PeecmSdir/coord coord.$idxf
 
-#cp -f /data/userdata/mzare/source/Bin-01/$diri/source/VaspSdir/POSCAR POSCAR.$idxi
-#cp -f /data/userdata/mzare/source/Bin-01/$dirf/source/VaspSdir/POSCAR POSCAR.$idxf
-cp -f /data/userdata/mzare/source/Bin-01/$diri/source/VaspSdir/* VaspJdir/
+#cp -f /work/mzare/source-LJ-MF/Bin-01/$diri/source/VaspSdir/POSCAR POSCAR.$idxi
+#cp -f /work/mzare/source-LJ-MF/Bin-01/$dirf/source/VaspSdir/POSCAR POSCAR.$idxf
+cp -f /work/mzare/source-LJ-MF/Bin-01/$diri/source/VaspSdir/* VaspJdir/
 
-cp -f /data/userdata/mzare/source/Bin-01/$diri/source/PeecmSdir/embedded embedded.$idxi
-head -n 1234    /data/userdata/mzare/source/Bin-01/$dirf/source/PeecmSdir/embedded > tmp-head
-head -n 661234  /data/userdata/mzare/source/Bin-01/$diri/source/PeecmSdir/embedded | tail -n 660000 > tmp-midl
-tail -n 135     /data/userdata/mzare/source/Bin-01/$dirf/source/PeecmSdir/embedded > tmp-tail
+cp -f /work/mzare/source-LJ-MF/Bin-01/$diri/source/PeecmSdir/embedded embedded.$idxi
+head -n 1234    /work/mzare/source-LJ-MF/Bin-01/$dirf/source/PeecmSdir/embedded > tmp-head
+head -n 661234  /work/mzare/source-LJ-MF/Bin-01/$diri/source/PeecmSdir/embedded | tail -n 660000 > tmp-midl
+tail -n 135     /work/mzare/source-LJ-MF/Bin-01/$dirf/source/PeecmSdir/embedded > tmp-tail
 cat tmp-head tmp-midl tmp-tail > embedded.$idxf
 rm -f tmp-head tmp-midl tmp-tail
 
 cp -f coord.$idxi coord
 cp -f embedded.$idxi embedded
-cp -f /data/userdata/mzare/source/Bin-01/$diri/source/PeecmSdir/{alpha,beta} .
-#cp -f /data/userdata/mzare/source/Bin-01/$diri/source/TurboSdir/{alpha,beta} TurboJdir/
-cp -f /data/userdata/mzare/source/Bin-01/$diri/source/TurboSdir/* TurboJdir/
+cp -f /work/mzare/source-LJ-MF/Bin-01/$diri/source/PeecmSdir/{alpha,beta} .
+#cp -f /work/mzare/source-LJ-MF/Bin-01/$diri/source/TurboSdir/{alpha,beta} TurboJdir/
+cp -f /work/mzare/source-LJ-MF/Bin-01/$diri/source/TurboSdir/* TurboJdir/
 sed "s/DIRSUBS/$idxi/g" < smss-energy.sh_template > smss-energy.sh
 chmod +x smss-energy.sh
 ridft
@@ -59,13 +61,13 @@ find /dev/shm -user mzare -exec rm -fr {} \;
 
 cp -f control.ridft control
 
-cp -f /data/userdata/mzare/source/Bin-01/$dirf/source/VaspSdir/* VaspJdir/
+cp -f /work/mzare/source-LJ-MF/Bin-01/$dirf/source/VaspSdir/* VaspJdir/
 
 cp -f coord.$idxf coord
 cp -f embedded.$idxf embedded
-cp -f /data/userdata/mzare/source/Bin-01/$dirf/source/PeecmSdir/{alpha,beta} .
-#cp -f /data/userdata/mzare/source/Bin-01/$dirf/source/TurboSdir/{alpha,beta} TurboJdir/
-cp -f /data/userdata/mzare/source/Bin-01/$dirf/source/TurboSdir/* TurboJdir/
+cp -f /work/mzare/source-LJ-MF/Bin-01/$dirf/source/PeecmSdir/{alpha,beta} .
+#cp -f /work/mzare/source-LJ-MF/Bin-01/$dirf/source/TurboSdir/{alpha,beta} TurboJdir/
+cp -f /work/mzare/source-LJ-MF/Bin-01/$dirf/source/TurboSdir/* TurboJdir/
 sed "s/DIRSUBS/$idxf/g" < smss-energy.sh_template > smss-energy.sh
 chmod +x smss-energy.sh
 ridft

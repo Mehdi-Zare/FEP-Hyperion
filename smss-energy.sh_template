@@ -163,13 +163,13 @@ if [ ${SMSS_MODE} -eq 2 ] ; then
   done
 
   # Execute REPLAY jobs.
-  let SMSS_NCORE_OFFSET=-${SMSS_PARCORES}
+#  let SMSS_NCORE_OFFSET=-${SMSS_PARCORES}
 #  for jobidx in `seq 1 1 ${SMSS_PARJOBS_HISTORY}` ; do
-  for jobidx in `seq 1 1 1` ; do
-    let SMSS_NCORE_OFFSET=${SMSS_NCORE_OFFSET}+${SMSS_PARCORES}
+  for jobidx in `seq 1 1 ${SMSS_PARJOBS_HISTORY}` ; do
+    #let SMSS_NCORE_OFFSET=${SMSS_NCORE_OFFSET}+${SMSS_PARCORES}
     cd job-${jobidx}
-    SMSS_EXEC_DLPOLY=`echo "dlpoly-replay-history"`
-    ${SMSS_EXEC_DLPOLY} 
+    SMSS_EXEC_DLPOLY=`echo "dlpoly-replay-history-2Cores"`
+    ${SMSS_EXEC_DLPOLY} &
     cd ..
   done
   wait
@@ -184,14 +184,14 @@ if [ ${SMSS_MODE} -eq 2 ] ; then
 #  wait
 
   # Ensure that all REPLAY jobs finished successfully.
-  let SMSS_NCORE_OFFSET=-${SMSS_PARCORES}
+  #let SMSS_NCORE_OFFSET=-${SMSS_PARCORES}
   for jobidx in `seq 1 1 ${SMSS_PARJOBS_HISTORY}` ; do
-    SMSS_REPLAY_SUCCESS=`wc -l job-${jobidx}/MMS_REPLAY | grep 65000 | wc -l`
+    SMSS_REPLAY_SUCCESS=`wc -l job-${jobidx}/MMS_REPLAY | grep 6500 | wc -l`
     if [ ${SMSS_REPLAY_SUCCESS} -ne 1 ] ; then
       let SMSS_NCORE_OFFSET=${SMSS_NCORE_OFFSET}+${SMSS_PARCORES}
       cd job-${jobidx}
       rm -f MMS_REPLAY
-      SMSS_EXEC_DLPOLY=`echo "dlpoly-replay-history"`
+      SMSS_EXEC_DLPOLY=`echo "dlpoly-replay-history-2Cores"`
       ${SMSS_EXEC_DLPOLY} 
       cd ..
     fi

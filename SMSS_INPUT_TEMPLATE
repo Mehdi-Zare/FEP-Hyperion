@@ -1,4 +1,4 @@
-$IDIR_BASE      = /data/userdata/mzare/source/Bin-01/DIRSUBS/source 
+$IDIR_BASE      = /work/mzare/source-LJ-MF/Bin-01/DIRSUBS/source 
 $DRIVER         = peecm
 $REFRESH_MOS    = none
 $REPLACE_ENERGY = .true.
