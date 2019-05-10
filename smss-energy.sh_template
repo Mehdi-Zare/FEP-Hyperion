@@ -1,7 +1,5 @@
 #!/bin/bash
 
-# Copy required files.
-#cp -f POSCAR.DIRSUBS VaspJdir/POSCAR
 
 # Validate SMSS mode.
 if [ -n ${SMSS_MODE} ] ; then
@@ -62,47 +60,62 @@ fi
 # Execute TURBOMOLE and VASP jobs.
 if [ ${SMSS_MODE} -eq 1 ] ; then
   cd ${SMSS_WDIR_TURBO}
+  unset OMP_PROC_BIND
+  unset OMP_PLACES
+  unset OMP_NUM_THREADS
   ${SMSS_EXEC_TURBO}.save > ${SMSS_EXEC_TURBO}.out 
   wait
   cd ${SMSS_WDIR_COSMO}
   ${SMSS_EXEC_TURBO}.save > ${SMSS_EXEC_TURBO}.out 
   wait 
   cd ${SMSS_WDIR_VASP}
-  mpirun -np 28  /home/mzare/VASP_5.4.4/vasp.5.4.4/bin/vasp_std 1> RESULTS 2> ERROR 
+  export OMP_PROC_BIND=true
+  export OMP_PLACES=threads
+  export OMP_NUM_THREADS=28
+  mpirun -np 28 vasp_std 1> RESULTS 2> ERROR 
   wait
 elif [ ${SMSS_MODE} -eq 2 ] ; then
   cd ${SMSS_WDIR_PEECM}
+  unset OMP_PROC_BIND
+  unset OMP_PLACES
+  unset OMP_NUM_THREADS
   ${SMSS_EXEC_TURBO}.save > ${SMSS_EXEC_TURBO}.out 
-  wait
-
+  wait 
 #clean up the node on hyperion for Turbomole jobs
 ################################################
-find /dev/shm -user mzare -exec rm -fr {} \;
+find /dev/shm -user saleheen -exec rm -fr {} \;
 ################################################
- 
-#  cd ${SMSS_WDIR_TURBO}
-#  ${SMSS_EXEC_TURBO}.save > ${SMSS_EXEC_TURBO}.out 
-#  wait 
-#  cd ${SMSS_WDIR_VASP}
-#  mpirun -np 28  /home/mzare/VASP_5.4.4/vasp.5.4.4/bin/vasp_std 1> RESULTS 2> ERROR 
-# wait
 fi
 
 ####################################   MODIFICATION BY MEHDI ZARE ##################################
 
 # Execute DLPOLY jobs.
+
 if [ ${SMSS_MODE} -eq 2 ] ; then
   # Execute REFERENCE job.
   cd ${SMSS_WDIR_REFIMG}
   rm -f MMS_REPLAY*
+
 # Preparing Ref100 directory
   cp -f ${SMSS_WDIR_REFIMG}/{CONFIG,CONTROL,FIELD,HISTORY,MMS_ENSEMBLE} ${SMSS_WDIR_REFIMG}/Ref100/
   cd ${SMSS_WDIR_REFIMG}/Ref100
   rm -f MMS_REPLAY*
   SMSS_EXEC_DLPOLY=`echo "dlpoly-replay-history"`
   ${SMSS_EXEC_DLPOLY}
-  wait
+  sleep 2m
+
+# Checking for completion
+  ref100_success=`wc -l stderr | awk -F " " '{print $1}'`
+  while [ $ref100_success -ne 0 ]
+  do
+  SMSS_EXEC_DLPOLY=`echo "dlpoly-replay-history"`
+  ${SMSS_EXEC_DLPOLY} 
+  sleep 2m
+  ref100_success=`wc -l stderr | awk -F " " '{print $1}'`
+  done
+
   cp MMS_REPLAY ../MMS_REPLAY_Refimg_100
+
 # Prepare Dlpoly100 directory
   cp -f ${SMSS_WDIR_DLPOLY}/{CONFIG,CONTROL,FIELD_TEMPLATE,MMS_ENSEMBLE} ${SMSS_WDIR_REFIMG}/Dlpoly100/
   cp -f ${SMSS_WDIR_REFIMG}/HISTORY ${SMSS_WDIR_REFIMG}/Dlpoly100/
@@ -112,29 +125,48 @@ if [ ${SMSS_MODE} -eq 2 ] ; then
   rm -f MMS_REPLAY*
   SMSS_EXEC_DLPOLY=`echo "dlpoly-replay-history"`
   ${SMSS_EXEC_DLPOLY}
-  wait
+  sleep 2m
+
+# Checking for completion
+  dl100_success=`wc -l stderr | awk -F " " '{print $1}'`
+  while [ $dl100_success -ne 0 ]
+  do
+  SMSS_EXEC_DLPOLY=`echo "dlpoly-replay-history"`
+  ${SMSS_EXEC_DLPOLY} 
+  sleep 2m
+  dl100_success=`wc -l stderr | awk -F " " '{print $1}'`
+  done
+
+
   cp MMS_REPLAY ../MMS_REPLAY_Dlpoly_100
+
 # Perform fortran code to get the meanfield average   
   cd ${SMSS_WDIR_REFIMG}
   rm -f AVERAGE MMS_REPLAY_AVERAGE
   SMSS_EXEC_MEANFIELD=`echo "MeanField"`
   ${SMSS_EXEC_MEANFIELD}
+
 # Get the fixed value
   Ave=`head AVERAGE | tail -1 | awk '{print $1}'`
+
 # make MMS_REPLAY format for the first frame and replace the energy value wih "Ave" to make it easier for Faheem code to read it
   linenum=`wc -l MMS_ENSEMBLE | awk '{ print $1  }'`
-  oneframe=$(($linenum+3))    # total number of lines in one-fram-MMS_REPLAY
+  oneframe=$(($linenum+3))    						# total number of lines in one-fram-MMS_REPLAY
   head -n$oneframe MMS_REPLAY_Refimg_100 > MMS_REPLAY_AVERAGE
   energyold=`head -3 MMS_REPLAY_AVERAGE | tail -1 | awk '{ print $3  }'`
   sed -i "s/$energyold/$Ave/" MMS_REPLAY_AVERAGE
+
 ##################################  END OF MODIFICATION BY MEHDI ZARE ##################################
+
+
 
 # Execute DLPOLY jobs.
 #if [ ${SMSS_MODE} -eq 2 ] ; then
-#  # Execute REFERENCE job.
+# Execute REFERENCE job.
 #  cd ${SMSS_WDIR_REFIMG}
+#  export OMP_NUM_THREADS=4
 #  rm -f MMS_REPLAY
-#  SMSS_EXEC_DLPOLY=`echo "dlpoly-replay-history"`
+#  SMSS_EXEC_DLPOLY=`echo "dlpoly-replay-history-4Cores"`
 #  ${SMSS_EXEC_DLPOLY} 
 #  wait
 
@@ -162,39 +194,27 @@ if [ ${SMSS_MODE} -eq 2 ] ; then
     fi
   done
 
-  # Execute REPLAY jobs.
-  let SMSS_NCORE_OFFSET=-${SMSS_PARCORES}
-#  for jobidx in `seq 1 1 ${SMSS_PARJOBS_HISTORY}` ; do
-  for jobidx in `seq 1 1 1` ; do
-    let SMSS_NCORE_OFFSET=${SMSS_NCORE_OFFSET}+${SMSS_PARCORES}
+# Execute REPLAY jobs.
+  for jobidx in `seq 1 1 ${SMSS_PARJOBS_HISTORY}` ; do
     cd job-${jobidx}
-    SMSS_EXEC_DLPOLY=`echo "dlpoly-replay-history"`
-    ${SMSS_EXEC_DLPOLY} 
+    SMSS_EXEC_DLPOLY=`echo "dlpoly-replay-history-2Cores"`
+    ${SMSS_EXEC_DLPOLY} & 
     cd ..
   done
-  wait
-#  let SMSS_NCORE_OFFSET=-${SMSS_PARCORES}
-#  for jobidx in `seq 9 1 16` ; do
-#    let SMSS_NCORE_OFFSET=${SMSS_NCORE_OFFSET}+${SMSS_PARCORES}
-#    cd job-${jobidx}
-#    SMSS_EXEC_DLPOLY=`echo "dlpoly-replay-history -n ${SMSS_PARCORES} -o ${SMSS_NCORE_OFFSET}"`
-#    ${SMSS_EXEC_DLPOLY}; rm -f ${HOME}/.slurm/job.${SLURM_JOB_ID}.* &
-#    cd ..
-#  done
-#  wait
-
-  # Ensure that all REPLAY jobs finished successfully.
-  let SMSS_NCORE_OFFSET=-${SMSS_PARCORES}
+  sleep 5m
+  
+# Ensure that all REPLAY jobs finished successfully.
   for jobidx in `seq 1 1 ${SMSS_PARJOBS_HISTORY}` ; do
-    SMSS_REPLAY_SUCCESS=`wc -l job-${jobidx}/MMS_REPLAY | grep 65000 | wc -l`
-    if [ ${SMSS_REPLAY_SUCCESS} -ne 1 ] ; then
-      let SMSS_NCORE_OFFSET=${SMSS_NCORE_OFFSET}+${SMSS_PARCORES}
+    SMSS_REPLAY_SUCCESS=`wc -l job-${jobidx}/MMS_REPLAY | grep 6500 | wc -l`
+    while [ ${SMSS_REPLAY_SUCCESS} -ne 1 ] ; do
       cd job-${jobidx}
       rm -f MMS_REPLAY
-      SMSS_EXEC_DLPOLY=`echo "dlpoly-replay-history"`
-      ${SMSS_EXEC_DLPOLY} 
+      SMSS_EXEC_DLPOLY=`echo "dlpoly-replay-history-2Cores"`
+      ${SMSS_EXEC_DLPOLY} & 
+      sleep 2m
       cd ..
-    fi
+      SMSS_REPLAY_SUCCESS=`wc -l job-${jobidx}/MMS_REPLAY | grep 6500 | wc -l`
+    done
   done
   wait
 
