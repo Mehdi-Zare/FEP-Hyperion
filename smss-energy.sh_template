@@ -83,7 +83,7 @@ elif [ ${SMSS_MODE} -eq 2 ] ; then
   wait 
 #clean up the node on hyperion for Turbomole jobs
 ################################################
-find /dev/shm -user saleheen -exec rm -fr {} \;
+find /dev/shm -user mzare -exec rm -fr {} \;
 ################################################
 fi
 
@@ -107,7 +107,7 @@ if [ ${SMSS_MODE} -eq 2 ] ; then
 # Checking for completion
   ref100_success=`wc -l stderr | awk -F " " '{print $1}'`
   while [ $ref100_success -ne 0 ]
-  do
+  do rm -f MMS_REPLAY*
   SMSS_EXEC_DLPOLY=`echo "dlpoly-replay-history"`
   ${SMSS_EXEC_DLPOLY} 
   sleep 2m
@@ -130,7 +130,7 @@ if [ ${SMSS_MODE} -eq 2 ] ; then
 # Checking for completion
   dl100_success=`wc -l stderr | awk -F " " '{print $1}'`
   while [ $dl100_success -ne 0 ]
-  do
+  do rm -f MMS_REPLAY*
   SMSS_EXEC_DLPOLY=`echo "dlpoly-replay-history"`
   ${SMSS_EXEC_DLPOLY} 
   sleep 2m
